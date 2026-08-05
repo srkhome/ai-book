@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>我的電子書 — 手工翻頁書</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style id="mainStyle">
+  :root{
+    --leather:#3b1a1f;
+    --leather-deep:#210d10;
+    --leather-edge:#4d2128;
+    --gold:#c9a24d;
+    --gold-bright:#efd58f;
+    --paper:#f3e8cf;
+    --paper-shadow:#dfcda3;
+    --paper-line:#cdb98a;
+    --ink:#2a1c12;
+    --ink-soft:#6b5842;
+    --desk:#141010;
+    --desk-2:#1c1613;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% 0%, var(--desk-2), var(--desk) 70%);
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  input{font-family:inherit;}
+
+  .hidden{display:none !important;}
+
+  /* ---------- shared: eyebrow / small labels ---------- */
+  .eyebrow{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--gold-bright);
+    display:flex;align-items:center;gap:10px;
+    margin:28px 0 10px;
+  }
+  .eyebrow::before{content:"";width:18px;height:1px;background:var(--gold);opacity:.7;}
+
+  /* =====================================================
+     EDITOR SCREEN
+     ===================================================== */
+  .desk{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 16px;
+  }
+  .editor-card{
+    width:100%;
+    max-width:560px;
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 26px);
+    border-radius:6px;
+    padding:36px 34px 34px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,.55),
+      0 2px 0 var(--gold) inset,
+      0 0 0 1px rgba(0,0,0,.08);
+    position:relative;
+  }
+  .editor-card::before{
+    content:"";
+    position:absolute;inset:10px;
+    border:1px solid rgba(160,130,70,.35);
+    border-radius:3px;
+    pointer-events:none;
+  }
+  .editor-kicker{
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .editor-title{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(28px,5vw,38px);
+    margin:6px 0 0;
+    color:var(--ink);
+    line-height:1.15;
+  }
+  .editor-title em{color:#8a4b2f;font-style:italic;}
+
+  .field{display:block;margin-top:22px;}
+  .field span{
+    display:block;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .field input[type="text"]{
+    width:100%;
+    border:none;
+    border-bottom:1.5px solid var(--paper-line);
+    background:transparent;
+    padding:6px 2px 10px;
+    font-family:'Fraunces',serif;
+    font-size:22px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s;
+  }
+  .field input[type="text"]:focus{border-bottom-color:#8a4b2f;}
+  .field input[type="text"]::placeholder{color:#b3a281;font-style:italic;}
+
+  .title-row{display:flex;align-items:flex-end;gap:10px;}
+  .title-row input[type="text"]{flex:1;}
+  .color-swatch{
+    flex:0 0 auto;
+    width:34px;height:34px;
+    border-radius:50%;
+    overflow:hidden;
+    border:1.5px solid var(--paper-line);
+    margin-bottom:8px;
+    position:relative;
+  }
+  .color-swatch input[type="color"]{
+    position:absolute;
+    top:-6px;left:-6px;
+    width:46px;height:46px;
+    border:none;padding:0;cursor:pointer;
+    background:none;
+  }
+
+  /* upload slots */
+  .upload-slot{
+    position:relative;
+    border:1.5px dashed var(--paper-line);
+    border-radius:4px;
+    background:rgba(255,255,255,.25);
+    min-height:120px;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+    transition:border-color .2s, background .2s;
+  }
+  .upload-slot:hover{border-color:#8a4b2f;background:rgba(255,255,255,.4);}
+  .cover-slot-wrap{margin-top:10px;}
+  .cover-slot-wrap .upload-slot{min-height:160px;}
+  .upload-empty{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    letter-spacing:.03em;
+    padding:14px;
+    pointer-events:none;
+  }
+  .upload-empty .plus{
+    display:block;font-family:'Fraunces',serif;font-size:26px;color:#8a4b2f;margin-bottom:4px;
+  }
+  .upload-preview{
+    position:absolute;inset:0;
+    display:none;
+  }
+  .upload-preview.show{display:block;}
+  .upload-preview img,.upload-preview video{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+  .slot-remove{
+    position:absolute;top:6px;right:6px;
+    width:24px;height:24px;border-radius:50%;
+    background:rgba(20,10,10,.72);
+    color:#f3e8cf;border:none;
+    font-size:14px;line-height:1;
+    display:none;align-items:center;justify-content:center;
+    z-index:2;
+  }
+  .slot-remove.show{display:flex;}
+
+  .music-slot{min-height:64px;}
+  .music-preview{
+    display:none;
+    align-items:center;gap:10px;
+    width:100%;padding:0 16px;
+    font-size:13px;color:var(--ink);
+  }
+  .music-preview.show{display:flex;}
+  .music-note{
+    width:30px;height:30px;border-radius:50%;
+    background:var(--leather);color:var(--gold-bright);
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;font-size:14px;
+  }
+  .music-filename{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  .music-btn{
+    top:18px;left:50%;
+    transform:translateX(-50%);
+  }
+  .music-btn:hover{transform:translateX(-50%) translateY(-1px);}
+  .music-btn.playing{background:var(--leather);color:var(--gold-bright);border-color:var(--gold);}
+  @media (max-width:560px){
+    .music-btn{top:64px;}
+  }
+
+  .pages-grid{
+    margin-top:12px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+  }
+  .pages-grid .upload-slot{min-height:88px;}
+  .page-num-tag{
+    position:absolute;bottom:4px;left:6px;
+    font-family:'Inter',sans-serif;
+    font-size:10px;letter-spacing:.08em;
+    color:var(--ink-soft);
+    background:rgba(243,232,207,.85);
+    padding:1px 5px;border-radius:2px;
+    z-index:2;
+  }
+
+  .ghost-btn{
+    margin-top:14px;
+    width:100%;
+    padding:11px;
+    background:transparent;
+    border:1px solid var(--paper-line);
+    border-radius:3px;
+    color:var(--ink-soft);
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    transition:.2s;
+  }
+  .ghost-btn:hover{border-color:#8a4b2f;color:#8a4b2f;}
+  .ghost-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+  .hint-text{
+    font-size:11.5px;color:var(--ink-soft);opacity:.75;
+    margin-top:8px;line-height:1.5;
+  }
+
+  .primary-btn{
+    margin-top:30px;
+    width:100%;
+    padding:15px;
+    background:linear-gradient(180deg,var(--leather-edge),var(--leather));
+    color:var(--gold-bright);
+    border:1px solid var(--gold);
+    border-radius:3px;
+    font-family:'Fraunces',serif;
+    font-size:17px;
+    letter-spacing:.03em;
+    box-shadow:0 10px 22px rgba(0,0,0,.35);
+    transition:transform .15s, box-shadow .15s;
+  }
+  .primary-btn:hover{transform:translateY(-1px);box-shadow:0 14px 26px rgba(0,0,0,.42);}
+  .primary-btn:active{transform:translateY(0);}
+  .warn-text{
+    color:#8a2f2f;font-size:12px;margin-top:10px;
+    display:none;
+  }
+  .warn-text.show{display:block;}
+
+  /* =====================================================
+     READING SCREEN
+     ===================================================== */
+  .stage-screen{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:30px 12px;
+    position:relative;
+  }
+  .corner-btn{
+    position:fixed;
+    top:18px;
+    z-index:50;
+    padding:9px 16px;
+    background:rgba(243,232,207,.92);
+    border:1px solid var(--gold);
+    border-radius:20px;
+    font-size:12.5px;
+    letter-spacing:.05em;
+    color:var(--ink);
+    display:flex;align-items:center;gap:6px;
+    box-shadow:0 6px 16px rgba(0,0,0,.35);
+    transition:transform .15s, background .15s;
+  }
+  .corner-btn:hover{transform:translateY(-1px);background:#fff8e8;}
+  .edit-btn{left:18px;}
+  .download-btn{right:18px;}
+  .download-btn .seal{
+    width:16px;height:16px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #b3452f, #6f1f16);
+    display:inline-block;
+  }
+
+  .book-wrap{
+    position:relative;
+    width:min(70vmin, 420px);
+    height:min(94vmin, 580px);
+    perspective:2600px;
+  }
+  .book{
+    position:absolute;inset:0;
+    left:6%;
+    width:94%;
+    transform-style:preserve-3d;
+    filter:drop-shadow(0 30px 45px rgba(0,0,0,.55));
+  }
+  .book.shake{animation:shakeBook .32s ease;}
+  @keyframes shakeBook{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-6px);}
+    75%{transform:translateX(6px);}
+  }
+
+  .sheet{
+    position:absolute;inset:0;
+    transform-style:preserve-3d;
+    transform-origin:left center;
+    transition:transform .72s cubic-bezier(.45,.05,.18,1);
+    border-radius:2px 5px 5px 2px;
+  }
+  .sheet.flipped{transform:rotateY(-178deg);}
+  @media (prefers-reduced-motion:reduce){
+    .sheet{transition:transform .25s linear;}
+  }
+
+  .face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    overflow:hidden;
+    border-radius:2px 5px 5px 2px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.06), 2px 0 10px rgba(0,0,0,.18);
+  }
+  .face.back{transform:rotateY(180deg);}
+
+  .paper-back{
+    width:100%;height:100%;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.02) 0 1px, transparent 1px 3px),
+      var(--paper);
+    position:relative;
+  }
+  .paper-back::after{
+    content:"";
+    position:absolute;inset:0;
+    background:radial-gradient(ellipse at 20% 15%, rgba(255,255,255,.35), transparent 55%);
+  }
+
+  /* cover face */
+  .cover-face{background:var(--leather);}
+  .cover-media{position:absolute;inset:0;}
+  .cover-media img,.cover-media video{width:100%;height:100%;object-fit:cover;display:block;}
+  .cover-media.empty{
+    background:linear-gradient(160deg,var(--leather-edge),var(--leather) 60%,var(--leather-deep));
+  }
+  .cover-scrim{
+    position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(15,7,7,.15) 0%, rgba(15,7,7,.05) 40%, rgba(10,5,5,.78) 100%);
+  }
+  .cover-face::before{
+    content:"";position:absolute;inset:0;
+    box-shadow:inset 0 0 0 10px var(--leather), inset 0 0 0 12px var(--gold);
+    pointer-events:none;
+    opacity:.9;
+  }
+  .cover-flourish{
+    position:absolute;top:26px;left:50%;transform:translateX(-50%);
+    color:var(--gold-bright);font-size:15px;opacity:.85;
+  }
+  .cover-title{
+    position:absolute;left:22px;right:22px;bottom:34px;
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(20px,6vmin,30px);
+    color:var(--gold-bright);
+    line-height:1.25;
+    text-shadow:0 3px 14px rgba(0,0,0,.6);
+  }
+  .cover-title::after{
+    content:"";display:block;width:32px;height:2px;background:currentColor;opacity:.85;margin-top:12px;
+  }
+  .cover-author{
+    font-family:'Lora',serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:clamp(12px,3vmin,15px);
+    color:var(--gold-bright);
+    opacity:.9;
+    margin-top:10px;
+    text-shadow:0 2px 10px rgba(0,0,0,.6);
+  }
+  .cover-author::before{content:"— ";}
+
+  /* content page face */
+  .page-face{background:var(--paper);}
+  .page-media{
+    position:absolute;inset:14px;
+    background:#0000;
+    border-radius:1px;
+    overflow:hidden;
+    box-shadow:0 2px 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.05);
+  }
+  .page-media img,.page-media video{width:100%;height:100%;object-fit:contain;display:block;background:var(--paper);}
+  .page-face::after{
+    content:"";position:absolute;inset:0;
+    box-shadow:inset 0 0 24px rgba(120,95,50,.12);
+    pointer-events:none;
+  }
+
+  /* spine shading — deepens as sheets approach vertical */
+  .sheet::before{
+    content:"";
+    position:absolute;top:0;bottom:0;left:0;width:26px;
+    background:linear-gradient(90deg, rgba(0,0,0,.18), transparent);
+    opacity:0;
+    transition:opacity .72s;
+    pointer-events:none;
+    z-index:5;
+  }
+  .sheet.flipped::before{opacity:1;}
+
+  /* back cover / THE END */
+  .back-cover{
+    position:absolute;inset:0;
+    background:linear-gradient(160deg,var(--leather-edge),var(--leather) 55%,var(--leather-deep));
+    border-radius:2px 5px 5px 2px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.06);
+    display:flex;align-items:center;justify-content:center;
+    z-index:0;
+  }
+  .back-cover::before{
+    content:"";position:absolute;inset:0;
+    box-shadow:inset 0 0 0 10px var(--leather), inset 0 0 0 12px var(--gold);
+    opacity:.9;
+  }
+  .the-end{
+    text-align:center;
+    opacity:0;
+    transform:translateY(10px) scale(.96);
+    transition:opacity .8s ease .1s, transform .8s ease .1s;
+  }
+  .back-cover.show-end .the-end{opacity:1;transform:translateY(0) scale(1);}
+  .the-end .flourish{color:var(--gold);font-size:20px;margin-bottom:10px;letter-spacing:.4em;}
+  .the-end .end-text{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:clamp(26px,7vmin,40px);
+    color:var(--gold-bright);
+    letter-spacing:.06em;
+  }
+  .the-end .end-sub{
+    margin-top:14px;
+    font-family:'Lora',serif;
+    font-size:13px;
+    color:rgba(239,213,143,.75);
+    letter-spacing:.04em;
+  }
+
+  /* click zones */
+  .click-zone{
+    position:absolute;top:0;bottom:0;
+    width:19%;
+    z-index:40;
+    display:flex;align-items:center;
+    cursor:pointer;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .click-zone:hover{opacity:1;}
+  .click-zone.left{left:0;justify-content:flex-start;padding-left:6px;}
+  .click-zone.right{right:0;justify-content:flex-end;padding-right:6px;}
+  .click-zone .chevron{
+    width:30px;height:30px;border-radius:50%;
+    background:rgba(20,10,10,.45);
+    color:var(--gold-bright);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
+    backdrop-filter:blur(2px);
+  }
+
+  .page-indicator{
+    margin-top:20px;
+    font-family:'Lora',serif;
+    font-style:italic;
+    font-size:13px;
+    color:#cbb98c;
+    letter-spacing:.05em;
+  }
+
+  .first-hint{
+    position:fixed;
+    bottom:26px;left:50%;transform:translateX(-50%);
+    font-size:12px;color:#cbb98c;
+    background:rgba(20,14,12,.6);
+    padding:8px 16px;border-radius:20px;
+    letter-spacing:.04em;
+    transition:opacity .5s;
+    z-index:45;
+    pointer-events:none;
+  }
+  .first-hint.gone{opacity:0;}
+
+  @media (max-width:480px){
+    .pages-grid{grid-template-columns:repeat(3,1fr);}
+    .editor-card{padding:28px 20px 26px;}
+    .corner-btn{padding:8px 12px;font-size:11.5px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ EDITOR SCREEN ============ -->
+<div class="desk" id="editorScreen">
+  <div class="editor-card">
+    <p class="editor-kicker">EX LIBRIS · 手工電子書</p>
+    <h1 class="editor-title">打造屬於你的<br/><em>翻頁書</em></h1>
+
+    <label class="field">
+      <span>書名</span>
+      <div class="title-row">
+        <input type="text" id="titleInput" placeholder="輸入書名…" maxlength="40" />
+        <span class="color-swatch">
+          <input type="color" id="titleColorInput" value="#efd58f" title="選擇書名顏色" />
+        </span>
+      </div>
+    </label>
+
+    <label class="field">
+      <span>作者（選填）</span>
+      <input type="text" id="authorInput" placeholder="輸入作者名稱…" maxlength="30" />
+    </label>
+
+    <p class="eyebrow">封面</p>
+    <div class="cover-slot-wrap">
+      <div class="upload-slot" id="coverSlot">
+        <input type="file" id="coverInput" accept="image/*,video/*" hidden />
+        <div class="upload-empty" id="coverEmpty"><span class="plus">＋</span>上傳封面照片或影片</div>
+        <div class="upload-preview" id="coverPreview"></div>
+        <button class="slot-remove" id="coverRemove" type="button">×</button>
+      </div>
+    </div>
+
+    <p class="eyebrow">內頁 <span id="pageCountLabel">（0 / 10）</span></p>
+    <div class="pages-grid" id="pagesGrid"></div>
+    <button class="ghost-btn" id="addPageBtn" type="button">＋ 新增一頁</button>
+    <p class="hint-text">每頁可放一張照片或一段影片，最多 10 頁；不足 10 頁時，書本會停在你最後一頁的內容。影片檔案較大，下載檔案時請留意大小。</p>
+
+    <p class="eyebrow">背景音樂（選填）</p>
+    <div class="upload-slot music-slot" id="musicSlot">
+      <input type="file" id="musicInput" accept="audio/*" hidden />
+      <div class="upload-empty" id="musicEmpty"><span class="plus">♪</span>上傳一首音樂</div>
+      <div class="music-preview" id="musicPreview"></div>
+      <button class="slot-remove" id="musicRemove" type="button">×</button>
+    </div>
+    <p class="hint-text">翻開書本後可以點按鈕播放／暫停，會自動循環播放。</p>
+
+    <p class="warn-text" id="warnText">請先輸入書名並上傳封面，才能翻開這本書。</p>
+    <button class="primary-btn" id="previewBtn" type="button">翻開這本書 →</button>
+  </div>
+</div>
+
+<!-- ============ READING SCREEN ============ -->
+<div class="stage-screen hidden" id="readingScreen">
+  <button class="corner-btn edit-btn" id="editBtn" type="button">✎ 編輯</button>
+  <button class="corner-btn download-btn" id="downloadBtn" type="button"><span class="seal"></span>下載</button>
+  <button class="corner-btn music-btn hidden" id="musicBtn" type="button"><span id="musicIcon">♪</span> <span id="musicLabel">播放音樂</span></button>
+  <audio id="bgMusic" loop></audio>
+
+  <div class="book-wrap">
+    <div class="book" id="book">
+      <div class="back-cover" id="backCover">
+        <div class="the-end">
+          <div class="flourish">✦ ✦ ✦</div>
+          <div class="end-text">THE END</div>
+          <div class="end-sub" id="endSub"></div>
+        </div>
+      </div>
+      <!-- sheets injected by JS -->
+    </div>
+    <div class="click-zone left" id="zoneLeft"><span class="chevron">‹</span></div>
+    <div class="click-zone right" id="zoneRight"><span class="chevron">›</span></div>
+  </div>
+  <div class="page-indicator" id="pageIndicator"></div>
+  <div class="first-hint" id="firstHint">點擊書本右側翻到下一頁，左側回上一頁</div>
+</div>
+
+<script id="mainScript">
+(function(){
+  "use strict";
+
+  /* ---------------- state ---------------- */
+  var bookData = { title:"", cover:null, pages:[], music:null, author:"", titleColor:"#efd58f" }; // pages: [{type,src}]
+  var totalSheets = 0;
+  var currentSheet = 0;
+  var zTimer = null;
+  var hintShown = true;
+
+  /* ---------------- editor elements ---------------- */
+  var editorScreen = document.getElementById('editorScreen');
+  var readingScreen = document.getElementById('readingScreen');
+  var titleInput = document.getElementById('titleInput');
+  var titleColorInput = document.getElementById('titleColorInput');
+  var authorInput = document.getElementById('authorInput');
+  var coverSlot = document.getElementById('coverSlot');
+  var coverInput = document.getElementById('coverInput');
+  var coverEmpty = document.getElementById('coverEmpty');
+  var coverPreview = document.getElementById('coverPreview');
+  var coverRemove = document.getElementById('coverRemove');
+  var pagesGrid = document.getElementById('pagesGrid');
+  var addPageBtn = document.getElementById('addPageBtn');
+  var pageCountLabel = document.getElementById('pageCountLabel');
+  var musicSlot = document.getElementById('musicSlot');
+  var musicInput = document.getElementById('musicInput');
+  var musicEmpty = document.getElementById('musicEmpty');
+  var musicPreview = document.getElementById('musicPreview');
+  var musicRemove = document.getElementById('musicRemove');
+  var previewBtn = document.getElementById('previewBtn');
+  var warnText = document.getElementById('warnText');
+
+  var pageSlots = []; // {wrapEl, src, type}
+
+  function readFile(file, cb){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var type = file.type.indexOf('video') === 0 ? 'video' : 'image';
+      cb({ type: type, src: e.target.result });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function mediaEl(type, src, cls){
+    var el = document.createElement(type === 'video' ? 'video' : 'img');
+    el.src = src;
+    if (cls) el.className = cls;
+    if (type === 'video'){
+      el.muted = true;
+      el.loop = true;
+      el.playsInline = true;
+      el.controls = true;
+      el.preload = 'metadata';
+    }
+    return el;
+  }
+
+  /* ---------------- cover upload ---------------- */
+  if (coverSlot && coverInput){
+    coverSlot.addEventListener('click', function(e){
+      if (e.target === coverRemove) return;
+      coverInput.click();
+    });
+    coverInput.addEventListener('change', function(){
+      var file = coverInput.files && coverInput.files[0];
+      if (!file) return;
+      readFile(file, function(result){
+        bookData.cover = result;
+        coverPreview.innerHTML = '';
+        coverPreview.appendChild(mediaEl(result.type, result.src));
+        coverPreview.classList.add('show');
+        coverEmpty.style.display = 'none';
+        coverRemove.classList.add('show');
+        warnText.classList.remove('show');
+      });
+    });
+    coverRemove.addEventListener('click', function(e){
+      e.stopPropagation();
+      bookData.cover = null;
+      coverPreview.innerHTML = '';
+      coverPreview.classList.remove('show');
+      coverEmpty.style.display = '';
+      coverRemove.classList.remove('show');
+      coverInput.value = '';
+    });
+  }
+
+  /* ---------------- music upload ---------------- */
+  if (musicSlot && musicInput){
+    musicSlot.addEventListener('click', function(e){
+      if (e.target === musicRemove) return;
+      musicInput.click();
+    });
+    musicInput.addEventListener('change', function(){
+      var file = musicInput.files && musicInput.files[0];
+      if (!file) return;
+      readFile(file, function(result){
+        bookData.music = { src: result.src, name: file.name };
+        musicPreview.innerHTML = '<span class="music-note">♪</span><span class="music-filename">' + escapeHtml(file.name) + '</span>';
+        musicPreview.classList.add('show');
+        musicEmpty.style.display = 'none';
+        musicRemove.classList.add('show');
+      });
+    });
+    musicRemove.addEventListener('click', function(e){
+      e.stopPropagation();
+      bookData.music = null;
+      musicPreview.innerHTML = '';
+      musicPreview.classList.remove('show');
+      musicEmpty.style.display = '';
+      musicRemove.classList.remove('show');
+      musicInput.value = '';
+    });
+  }
+
+  /* ---------------- page upload slots ---------------- */
+  function updatePageCountLabel(){
+    if (pageCountLabel) pageCountLabel.textContent = '（' + pageSlots.length + ' / 10）';
+    if (addPageBtn) addPageBtn.disabled = pageSlots.length >= 10;
+  }
+
+  function renumberSlots(){
+    pageSlots.forEach(function(slot, i){
+      slot.tag.textContent = '第 ' + (i+1) + ' 頁';
+    });
+  }
+
+  function addPageSlot(){
+    if (pageSlots.length >= 10) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'upload-slot';
+
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,video/*';
+    input.hidden = true;
+
+    var empty = document.createElement('div');
+    empty.className = 'upload-empty';
+    empty.innerHTML = '<span class="plus">＋</span>上傳';
+
+    var preview = document.createElement('div');
+    preview.className = 'upload-preview';
+
+    var remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'slot-remove';
+    remove.textContent = '×';
+
+    var tag = document.createElement('div');
+    tag.className = 'page-num-tag';
+
+    wrap.appendChild(input);
+    wrap.appendChild(empty);
+    wrap.appendChild(preview);
+    wrap.appendChild(remove);
+    wrap.appendChild(tag);
+    pagesGrid.appendChild(wrap);
+
+    var slot = { wrap: wrap, input: input, empty: empty, preview: preview, remove: remove, tag: tag, data: null };
+    pageSlots.push(slot);
+
+    wrap.addEventListener('click', function(e){
+      if (e.target === remove) return;
+      input.click();
+    });
+    input.addEventListener('change', function(){
+      var file = input.files && input.files[0];
+      if (!file) return;
+      readFile(file, function(result){
+        slot.data = result;
+        preview.innerHTML = '';
+        preview.appendChild(mediaEl(result.type, result.src));
+        preview.classList.add('show');
+        empty.style.display = 'none';
+        remove.classList.add('show');
+      });
+    });
+    remove.addEventListener('click', function(e){
+      e.stopPropagation();
+      var idx = pageSlots.indexOf(slot);
+      if (idx > -1) pageSlots.splice(idx,1);
+      wrap.remove();
+      renumberSlots();
+      updatePageCountLabel();
+    });
+
+    renumberSlots();
+    updatePageCountLabel();
+  }
+
+  if (addPageBtn){
+    addPageBtn.addEventListener('click', addPageSlot);
+    // seed with 3 empty slots to start
+    addPageSlot(); addPageSlot(); addPageSlot();
+  }
+
+  /* ---------------- go to reading ---------------- */
+  if (previewBtn){
+    previewBtn.addEventListener('click', function(){
+      var title = titleInput.value.trim() || '未命名的書';
+      if (!bookData.cover){
+        warnText.classList.add('show');
+        coverSlot.scrollIntoView({behavior:'smooth', block:'center'});
+        return;
+      }
+      warnText.classList.remove('show');
+      bookData.title = title;
+      bookData.author = (authorInput && authorInput.value.trim()) || '';
+      bookData.titleColor = (titleColorInput && titleColorInput.value) || '#efd58f';
+      bookData.pages = pageSlots.filter(function(s){ return !!s.data; }).map(function(s){ return s.data; });
+      startReading(bookData);
+    });
+  }
+
+  var editBtn = document.getElementById('editBtn');
+  if (editBtn){
+    editBtn.addEventListener('click', function(){
+      readingScreen.classList.add('hidden');
+      editorScreen.classList.remove('hidden');
+    });
+  }
+
+  /* ---------------- book building ---------------- */
+  var bookEl = document.getElementById('book');
+  var backCoverEl = document.getElementById('backCover');
+  var zoneLeft = document.getElementById('zoneLeft');
+  var zoneRight = document.getElementById('zoneRight');
+  var pageIndicator = document.getElementById('pageIndicator');
+  var endSub = document.getElementById('endSub');
+  var firstHint = document.getElementById('firstHint');
+  var bgMusic = document.getElementById('bgMusic');
+  var musicBtn = document.getElementById('musicBtn');
+  var musicIcon = document.getElementById('musicIcon');
+  var musicLabel = document.getElementById('musicLabel');
+
+  function buildSheetEl(index, kind, data){
+    var sheet = document.createElement('div');
+    sheet.className = 'sheet';
+    sheet.dataset.index = index;
+
+    var front = document.createElement('div');
+    front.className = 'face front';
+
+    if (kind === 'cover'){
+      front.classList.add('cover-face');
+      var media = document.createElement('div');
+      media.className = 'cover-media' + (data ? '' : ' empty');
+      if (data) media.appendChild(mediaEl(data.type, data.src));
+      front.appendChild(media);
+      var scrim = document.createElement('div');
+      scrim.className = 'cover-scrim';
+      front.appendChild(scrim);
+      var fl = document.createElement('div');
+      fl.className = 'cover-flourish';
+      fl.textContent = '✦';
+      front.appendChild(fl);
+      var titleEl = document.createElement('div');
+      titleEl.className = 'cover-title';
+      titleEl.textContent = bookData.title;
+      titleEl.style.color = bookData.titleColor || '#efd58f';
+      front.appendChild(titleEl);
+      if (bookData.author){
+        var authorEl = document.createElement('div');
+        authorEl.className = 'cover-author';
+        authorEl.textContent = bookData.author;
+        authorEl.style.color = bookData.titleColor || '#efd58f';
+        titleEl.appendChild(authorEl);
+      }
+    } else {
+      front.classList.add('page-face');
+      var pm = document.createElement('div');
+      pm.className = 'page-media';
+      if (data) pm.appendChild(mediaEl(data.type, data.src));
+      front.appendChild(pm);
+    }
+
+    var back = document.createElement('div');
+    back.className = 'face back';
+    var paperBack = document.createElement('div');
+    paperBack.className = 'paper-back';
+    back.appendChild(paperBack);
+
+    sheet.appendChild(front);
+    sheet.appendChild(back);
+    return sheet;
+  }
+
+  function buildBook(data){
+    bookData = data;
+    // clear existing sheets (keep backCover)
+    var existing = bookEl.querySelectorAll('.sheet');
+    existing.forEach(function(s){ s.remove(); });
+
+    totalSheets = data.pages.length + 1; // cover + pages
+    currentSheet = 0;
+
+    var coverSheet = buildSheetEl(0, 'cover', data.cover);
+    bookEl.appendChild(coverSheet);
+    data.pages.forEach(function(p, i){
+      var s = buildSheetEl(i+1, 'page', p);
+      bookEl.appendChild(s);
+    });
+
+    endSub.textContent = data.title;
+    updateZ();
+    hintShown = true;
+    if (firstHint){ firstHint.classList.remove('gone'); }
+
+    if (bgMusic && musicBtn){
+      bgMusic.pause();
+      bgMusic.currentTime = 0;
+      musicBtn.classList.remove('playing');
+      if (musicLabel) musicLabel.textContent = '播放音樂';
+      if (data.music && data.music.src){
+        bgMusic.src = data.music.src;
+        musicBtn.classList.remove('hidden');
+      } else {
+        bgMusic.removeAttribute('src');
+        musicBtn.classList.add('hidden');
+      }
+    }
+  }
+
+  if (musicBtn){
+    musicBtn.addEventListener('click', function(){
+      if (!bgMusic || !bgMusic.src) return;
+      if (bgMusic.paused){
+        bgMusic.play().catch(function(){});
+        musicBtn.classList.add('playing');
+        if (musicLabel) musicLabel.textContent = '暫停音樂';
+      } else {
+        bgMusic.pause();
+        musicBtn.classList.remove('playing');
+        if (musicLabel) musicLabel.textContent = '播放音樂';
+      }
+    });
+  }
+
+  function updateZ(){
+    var sheets = bookEl.querySelectorAll('.sheet');
+    sheets.forEach(function(s){
+      var idx = parseInt(s.dataset.index, 10);
+      if (idx < currentSheet){
+        s.style.zIndex = idx + 1;
+        s.classList.add('flipped');
+      } else {
+        s.style.zIndex = 1000 - idx;
+        s.classList.remove('flipped');
+      }
+    });
+    updateIndicator();
+    if (currentSheet >= totalSheets){
+      backCoverEl.classList.add('show-end');
+    } else {
+      backCoverEl.classList.remove('show-end');
+    }
+  }
+
+  function updateIndicator(){
+    if (!pageIndicator) return;
+    var pagesCount = totalSheets - 1;
+    if (currentSheet <= 0){
+      pageIndicator.textContent = '封面';
+    } else if (currentSheet >= totalSheets){
+      pageIndicator.textContent = 'THE END';
+    } else {
+      pageIndicator.textContent = '第 ' + currentSheet + ' 頁　／　共 ' + pagesCount + ' 頁';
+    }
+  }
+
+  function scheduleZUpdate(){
+    clearTimeout(zTimer);
+    zTimer = setTimeout(updateZ, 760);
+  }
+
+  function shake(){
+    bookEl.classList.remove('shake');
+    void bookEl.offsetWidth;
+    bookEl.classList.add('shake');
+  }
+
+  function flipNext(){
+    if (currentSheet >= totalSheets){ shake(); return; }
+    var sheet = bookEl.querySelector('.sheet[data-index="' + currentSheet + '"]');
+    if (sheet){
+      sheet.style.zIndex = 999;
+      sheet.classList.add('flipped');
+    }
+    currentSheet++;
+    scheduleZUpdate();
+    updateIndicator();
+    if (hintShown && firstHint){ firstHint.classList.add('gone'); hintShown = false; }
+  }
+
+  function flipPrev(){
+    if (currentSheet <= 0){ shake(); return; }
+    currentSheet--;
+    var sheet = bookEl.querySelector('.sheet[data-index="' + currentSheet + '"]');
+    if (sheet){
+      sheet.style.zIndex = 999;
+      sheet.classList.remove('flipped');
+    }
+    scheduleZUpdate();
+    updateIndicator();
+    if (hintShown && firstHint){ firstHint.classList.add('gone'); hintShown = false; }
+  }
+
+  if (zoneRight) zoneRight.addEventListener('click', flipNext);
+  if (zoneLeft) zoneLeft.addEventListener('click', flipPrev);
+
+  document.addEventListener('keydown', function(e){
+    if (readingScreen.classList.contains('hidden')) return;
+    if (e.key === 'ArrowRight') flipNext();
+    if (e.key === 'ArrowLeft') flipPrev();
+  });
+
+  function startReading(data){
+    buildBook(data);
+    editorScreen.classList.add('hidden');
+    readingScreen.classList.remove('hidden');
+  }
+
+  /* ---------------- download standalone book ---------------- */
+  var downloadBtn = document.getElementById('downloadBtn');
+  if (downloadBtn){
+    downloadBtn.addEventListener('click', function(){
+      var css = document.getElementById('mainStyle').innerHTML;
+      var js = document.getElementById('mainScript').innerHTML;
+      var safeTitle = (bookData.title || '我的電子書').replace(/[\\\/:*?"<>|]/g,'');
+      var html = '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '<title>' + escapeHtml(bookData.title || '我的電子書') + '</title>' +
+        '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+        '<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">' +
+        '<style>' + css + '</style></head><body>' +
+        '<div class="stage-screen" id="readingScreen">' +
+        '<button class="corner-btn music-btn hidden" id="musicBtn" type="button"><span id="musicIcon">♪</span> <span id="musicLabel">播放音樂</span></button>' +
+        '<audio id="bgMusic" loop></audio>' +
+        '<div class="book-wrap"><div class="book" id="book">' +
+        '<div class="back-cover" id="backCover"><div class="the-end"><div class="flourish">✦ ✦ ✦</div><div class="end-text">THE END</div><div class="end-sub" id="endSub"></div></div></div>' +
+        '</div>' +
+        '<div class="click-zone left" id="zoneLeft"><span class="chevron">‹</span></div>' +
+        '<div class="click-zone right" id="zoneRight"><span class="chevron">›</span></div>' +
+        '</div>' +
+        '<div class="page-indicator" id="pageIndicator"></div>' +
+        '<div class="first-hint" id="firstHint">點擊書本右側翻到下一頁，左側回上一頁</div>' +
+        '</div>' +
+        '<script>window.__BOOK_DATA__ = ' + JSON.stringify(bookData) + ';<\/script>' +
+        '<script id="mainScript">' + js + '<\/script>' +
+        '</body></html>';
+
+      var blob = new Blob([html], { type: 'text/html' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = (safeTitle || 'my-ebook') + '.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  /* ---------------- preloaded (standalone export) ---------------- */
+  if (window.__BOOK_DATA__){
+    if (editorScreen) editorScreen.classList.add('hidden');
+    if (readingScreen) readingScreen.classList.remove('hidden');
+    buildBook(window.__BOOK_DATA__);
+  }
+
+})();
+</script>
+</body>
+</html>
