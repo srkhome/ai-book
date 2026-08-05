@@ -660,12 +660,12 @@
     reader.readAsDataURL(file);
   }
 
-  function mediaEl(type, src, cls){
+  function mediaEl(type, src, cls, unmuted){
     var el = document.createElement(type === 'video' ? 'video' : 'img');
     el.src = src;
     if (cls) el.className = cls;
     if (type === 'video'){
-      el.muted = true;
+      el.muted = !unmuted;
       el.loop = true;
       el.playsInline = true;
       el.controls = true;
@@ -865,7 +865,7 @@
       front.classList.add('cover-face');
       var media = document.createElement('div');
       media.className = 'cover-media' + (data ? '' : ' empty');
-      if (data) media.appendChild(mediaEl(data.type, data.src));
+      if (data) media.appendChild(mediaEl(data.type, data.src, null, true));
       front.appendChild(media);
       var scrim = document.createElement('div');
       scrim.className = 'cover-scrim';
@@ -890,7 +890,7 @@
       front.classList.add('page-face');
       var pm = document.createElement('div');
       pm.className = 'page-media';
-      if (data) pm.appendChild(mediaEl(data.type, data.src));
+      if (data) pm.appendChild(mediaEl(data.type, data.src, null, true));
       front.appendChild(pm);
     }
 
@@ -929,6 +929,7 @@
     if (bgMusic && musicBtn){
       bgMusic.pause();
       bgMusic.currentTime = 0;
+      bgMusic.volume = 0.5;
       musicBtn.classList.remove('playing');
       if (musicLabel) musicLabel.textContent = '播放音樂';
       if (data.music && data.music.src){
@@ -938,6 +939,30 @@
         bgMusic.removeAttribute('src');
         musicBtn.classList.add('hidden');
       }
+    }
+
+    updateActiveMedia();
+  }
+
+  function updateActiveMedia(){
+    var activeVideo = null;
+    if (currentSheet < totalSheets){
+      var activeSheet = bookEl.querySelector('.sheet[data-index="' + currentSheet + '"]');
+      if (activeSheet) activeVideo = activeSheet.querySelector('.face.front video');
+    }
+    var allVideos = bookEl.querySelectorAll('video');
+    allVideos.forEach(function(v){
+      if (v !== activeVideo){
+        v.pause();
+        try{ v.currentTime = 0; }catch(e){}
+      }
+    });
+    if (activeVideo){
+      var p = activeVideo.play();
+      if (p && p.catch) p.catch(function(){});
+      if (bgMusic) bgMusic.muted = true;
+    } else {
+      if (bgMusic) bgMusic.muted = false;
     }
   }
 
@@ -1009,6 +1034,7 @@
     currentSheet++;
     scheduleZUpdate();
     updateIndicator();
+    updateActiveMedia();
     if (hintShown && firstHint){ firstHint.classList.add('gone'); hintShown = false; }
   }
 
@@ -1022,6 +1048,7 @@
     }
     scheduleZUpdate();
     updateIndicator();
+    updateActiveMedia();
     if (hintShown && firstHint){ firstHint.classList.add('gone'); hintShown = false; }
   }
 
