@@ -302,7 +302,17 @@
   }
   .corner-btn:hover{transform:translateY(-1px);background:#fff8e8;}
   .edit-btn{left:18px;}
-  .download-btn{right:18px;}
+  .top-right-controls{
+    position:fixed;
+    top:18px;right:18px;
+    z-index:50;
+    display:flex;
+    gap:8px;
+  }
+  .top-right-controls .corner-btn{
+    position:static;
+    top:auto;right:auto;
+  }
   .download-btn .seal{
     width:16px;height:16px;border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #b3452f, #6f1f16);
@@ -581,7 +591,10 @@
 <!-- ============ READING SCREEN ============ -->
 <div class="stage-screen hidden" id="readingScreen">
   <button class="corner-btn edit-btn" id="editBtn" type="button">✎ 編輯</button>
-  <button class="corner-btn download-btn" id="downloadBtn" type="button"><span class="seal"></span>下載</button>
+  <div class="top-right-controls">
+    <button class="corner-btn share-btn" id="shareBtn" type="button">⤴ 分享</button>
+    <button class="corner-btn download-btn" id="downloadBtn" type="button"><span class="seal"></span>下載</button>
+  </div>
   <button class="corner-btn music-btn hidden" id="musicBtn" type="button"><span id="musicIcon">♪</span> <span id="musicLabel">播放音樂</span></button>
   <audio id="bgMusic" loop></audio>
 
@@ -1027,45 +1040,83 @@
     readingScreen.classList.remove('hidden');
   }
 
-  /* ---------------- download standalone book ---------------- */
+  /* ---------------- build & export standalone book ---------------- */
+  function buildStandaloneHtml(){
+    var css = document.getElementById('mainStyle').innerHTML;
+    var js = document.getElementById('mainScript').innerHTML;
+    return '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+      '<title>' + escapeHtml(bookData.title || '我的電子書') + '</title>' +
+      '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">' +
+      '<style>' + css + '</style></head><body>' +
+      '<div class="stage-screen" id="readingScreen">' +
+      '<button class="corner-btn music-btn hidden" id="musicBtn" type="button"><span id="musicIcon">♪</span> <span id="musicLabel">播放音樂</span></button>' +
+      '<audio id="bgMusic" loop></audio>' +
+      '<div class="book-wrap"><div class="book" id="book">' +
+      '<div class="back-cover" id="backCover"><div class="the-end"><div class="flourish">✦ ✦ ✦</div><div class="end-text">THE END</div><div class="end-sub" id="endSub"></div></div></div>' +
+      '</div>' +
+      '<div class="click-zone left" id="zoneLeft"><span class="chevron">‹</span></div>' +
+      '<div class="click-zone right" id="zoneRight"><span class="chevron">›</span></div>' +
+      '</div>' +
+      '<div class="page-indicator" id="pageIndicator"></div>' +
+      '<div class="first-hint" id="firstHint">點擊書本右側翻到下一頁，左側回上一頁</div>' +
+      '</div>' +
+      '<script>window.__BOOK_DATA__ = ' + JSON.stringify(bookData) + ';<\/script>' +
+      '<script id="mainScript">' + js + '<\/script>' +
+      '</body></html>';
+  }
+
+  function safeFileTitle(){
+    return (bookData.title || '我的電子書').replace(/[\\\/:*?"<>|]/g,'') || 'my-ebook';
+  }
+
+  function triggerDownload(html, name){
+    var blob = new Blob([html], { type: 'text/html' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }
+
   var downloadBtn = document.getElementById('downloadBtn');
   if (downloadBtn){
     downloadBtn.addEventListener('click', function(){
-      var css = document.getElementById('mainStyle').innerHTML;
-      var js = document.getElementById('mainScript').innerHTML;
-      var safeTitle = (bookData.title || '我的電子書').replace(/[\\\/:*?"<>|]/g,'');
-      var html = '<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8">' +
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
-        '<title>' + escapeHtml(bookData.title || '我的電子書') + '</title>' +
-        '<link rel="preconnect" href="https://fonts.googleapis.com">' +
-        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-        '<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">' +
-        '<style>' + css + '</style></head><body>' +
-        '<div class="stage-screen" id="readingScreen">' +
-        '<button class="corner-btn music-btn hidden" id="musicBtn" type="button"><span id="musicIcon">♪</span> <span id="musicLabel">播放音樂</span></button>' +
-        '<audio id="bgMusic" loop></audio>' +
-        '<div class="book-wrap"><div class="book" id="book">' +
-        '<div class="back-cover" id="backCover"><div class="the-end"><div class="flourish">✦ ✦ ✦</div><div class="end-text">THE END</div><div class="end-sub" id="endSub"></div></div></div>' +
-        '</div>' +
-        '<div class="click-zone left" id="zoneLeft"><span class="chevron">‹</span></div>' +
-        '<div class="click-zone right" id="zoneRight"><span class="chevron">›</span></div>' +
-        '</div>' +
-        '<div class="page-indicator" id="pageIndicator"></div>' +
-        '<div class="first-hint" id="firstHint">點擊書本右側翻到下一頁，左側回上一頁</div>' +
-        '</div>' +
-        '<script>window.__BOOK_DATA__ = ' + JSON.stringify(bookData) + ';<\/script>' +
-        '<script id="mainScript">' + js + '<\/script>' +
-        '</body></html>';
+      triggerDownload(buildStandaloneHtml(), safeFileTitle());
+    });
+  }
 
-      var blob = new Blob([html], { type: 'text/html' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = (safeTitle || 'my-ebook') + '.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  var shareBtn = document.getElementById('shareBtn');
+  if (shareBtn){
+    shareBtn.addEventListener('click', function(){
+      var html = buildStandaloneHtml();
+      var name = safeFileTitle();
+      var shareText = '我做了一本電子書「' + (bookData.title || '') + '」' + (bookData.author ? '，作者：' + bookData.author : '') + '，點開附加的檔案用瀏覽器打開就能翻閱。';
+
+      var file = null;
+      try{ file = new File([html], name + '.html', { type: 'text/html' }); }catch(e){ file = null; }
+
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })){
+        navigator.share({
+          files: [file],
+          title: bookData.title || '我的電子書',
+          text: shareText
+        }).catch(function(){ /* user cancelled */ });
+      } else if (navigator.share){
+        navigator.share({
+          title: bookData.title || '我的電子書',
+          text: shareText
+        }).catch(function(){});
+        triggerDownload(html, name);
+      } else {
+        triggerDownload(html, name);
+        window.alert('這個瀏覽器不支援直接分享，已經幫你下載檔案，請自行附加到聊天訊息中傳送。');
+      }
     });
   }
 
